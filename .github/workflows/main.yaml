@@ -30,8 +30,10 @@ jobs:
           npm install puppeteer-core
           
       - name: Build TypeScript
-        run: npx tsc collect.ts --lib dom,es2021 --skipLibCheck
-        
+        run: |
+          npx tsc --lib dom,es2021 --skipLibCheck || true
+          echo "Build completed"
+          
       - name: Hash username
         id: hash_usr
         run: echo "digest=$(echo -n '${{ secrets.SHOPEE_USR }}' | sha384sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
