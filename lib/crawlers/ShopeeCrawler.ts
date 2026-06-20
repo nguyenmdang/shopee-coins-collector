@@ -1,4 +1,3 @@
-
 /* eslint-disable promise/param-names */
 /* eslint-disable no-tabs */
 import * as fs from 'fs';
@@ -12,8 +11,9 @@ import { login, pwd, aesKey } from '../config';
 import { AES, enc } from 'crypto-ts';
 
 export class ShopeeCrawler extends BaseCrawler {
-  readonly homepage = 'https://shopee.tw/';
-  readonly loginpage = 'https://shopee.tw/buyer/login?from=https%3A%2F%2Fshopee.tw%2Fuser%2Fcoin&next=https%3A%2F%2Fshopee.tw%2Fshopee-coins';
+  // Đổi domain sang shopee.vn
+  readonly homepage = 'https://shopee.vn/';
+  readonly loginpage = 'https://shopee.vn/buyer/login?from=https%3A%2F%2Fshopee.vn%2Fuser%2Fcoin&next=https%3A%2F%2Fshopee.vn%2Fshopee-coins';
   readonly pathCookie: any;
   usr: string;
   pwd: string;
@@ -118,7 +118,7 @@ export class ShopeeCrawler extends BaseCrawler {
     const curUrl = page.url();
     logger.debug('Currently at url: ' + curUrl);
 
-    const coinUrl = 'https://shopee.tw/shopee-coins';
+    const coinUrl = 'https://shopee.vn/shopee-coins';
     if (curUrl === coinUrl) {
       // If the user has logged in,
       // the webpage will redirect to the coin page
@@ -135,7 +135,8 @@ export class ShopeeCrawler extends BaseCrawler {
     await this.waitFor(page, pwdIpt);
     await page.type(loginIpt, this.usr);
     await page.type(pwdIpt, this.pwd);
-    await this.clickXPath(page, '//button[contains(text(), "登入")]');
+    // Đổi chữ "登入" (Đài Loan) sang "Đăng nhập" (Việt Nam)
+    await this.clickXPath(page, '//button[contains(text(), "Đăng nhập")]');
 
     // Wait for the login result.
     const outcomes = [
@@ -239,6 +240,7 @@ export class ShopeeCrawler extends BaseCrawler {
   }
 
   private async collectCoin (page: Page): Promise<number> {
+    // Đổi văn bản từ tiếng Trung sang tiếng Việt
     const collectableXPath = `//button[contains(text(), "${txt.RECEIVE_COIN}")]`;
     const collectedXPath = `//button[contains(text(), "${txt.COIN_RECEIVED}")]`;
     let status: 'collectable' | 'collected';
