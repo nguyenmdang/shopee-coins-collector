@@ -1,5 +1,6 @@
 /* eslint-disable promise/param-names */
 /* eslint-disable no-tabs */
+import { errors, PuppeteerLaunchOptions, Page, Protocol } from 'puppeteer-core';
 import * as fs from 'fs';
 import { errors, PuppeteerLaunchOptions, Page, Protocol } from 'puppeteer';
 import { logger } from '../logger';
