@@ -1,29 +1,36 @@
 name: Shopee Coin Collector
-on: 
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+on:
   workflow_dispatch: ~
   schedule:
-    - cron: "10 16 * * *" 
+    - cron: "10 16 * * *"
+
 jobs:
   run-action:
     name: Run action
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2 
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
-      
-      - name: TypeScript compile
-        run: tsc *.ts --lib dom,es2021 --skipLibCheck
 
-      - name: Hash usr name
+      - name: TypeScript compile
+        run: npx tsc *.ts --lib dom,es2021 --skipLibCheck
+
+      - name: Hash username
         uses: pplanel/hash-calculator-action@v1.3.1
         id: hash_usr
         with:
@@ -34,13 +41,13 @@ jobs:
 
       - name: Cache cookie
         id: cache-cookie
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          key: cookie-${{ steps.hash_usr.outputs.digest }}-${{github.run_id}}
+          path: env.cookie
+          key: cookie-${{ steps.hash_usr.outputs.digest }}
           restore-keys: |
             cookie-${{ steps.hash_usr.outputs.digest }}
-          path: env.cookie
-        
+
       - name: Run shopee collector
         run: node collect.js
         env:
