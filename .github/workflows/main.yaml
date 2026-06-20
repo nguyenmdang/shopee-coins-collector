@@ -1,8 +1,5 @@
 name: Shopee Coin Collector
 
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
 on:
   workflow_dispatch: ~
   schedule:
@@ -14,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Cập nhật checkout lên v4
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Cập nhật setup-node lên v4 với Node.js 22 (LTS mới nhất)
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
@@ -24,21 +23,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
 
+      # Cài dependencies
       - name: Install dependencies
         run: npm ci
 
+      # TypeScript compile
       - name: TypeScript compile
         run: npx tsc *.ts --lib dom,es2021 --skipLibCheck
 
+      # Hash username - Cập nhật lên phiên bản mới không dùng set-output
       - name: Hash username
-        uses: pplanel/hash-calculator-action@v1.3.1
         id: hash_usr
-        with:
-          input: ${{ secrets.SHOPEE_USR }}
-          method: SHA3
-          output_len: 384
-          truncate: true
+        run: |
+          echo "digest=$(echo -n '${{ secrets.SHOPEE_USR }}' | sha384sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
+      # Cache cookie - Cập nhật lên v4
       - name: Cache cookie
         id: cache-cookie
         uses: actions/cache@v4
@@ -48,9 +47,18 @@ jobs:
           restore-keys: |
             cookie-${{ steps.hash_usr.outputs.digest }}
 
+      # Cài Chromium để Puppeteer chạy
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      # Chạy shopee collector với biến môi trường
       - name: Run shopee collector
         run: node collect.js
         env:
           SHOPEE_USR: ${{ secrets.SHOPEE_USR }}
           SHOPEE_PWD: ${{ secrets.SHOPEE_PWD }}
           AES_KEY: ${{ secrets.AES_KEY }}
+          # Chỉ định Chromium đã cài
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
