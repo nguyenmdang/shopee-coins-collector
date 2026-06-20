@@ -21,12 +21,27 @@ export const DefaultCrawlerOptions: ICrawlerFullOptions = {
 export abstract class BaseCrawler {
   abstract run(): void;
   protected options: ICrawlerFullOptions;
+  
+  // Lưu launchOptions để dùng sau
+  protected launchOptionsWithSandbox: PuppeteerLaunchOptions;
 
   constructor (
     readonly launchOptions: PuppeteerLaunchOptions,
     options: ICrawlerOptions = {}
   ) {
     this.options = Object.assign({}, DefaultCrawlerOptions, options);
+
+    // THÊM SANDBOX FLAGS NGAY TỪ ĐẦU
+    this.launchOptionsWithSandbox = {
+      ...launchOptions,
+      args: [
+        ...(launchOptions.args || []),
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    };
 
     if (!this.isHeadless(launchOptions)) {
       if (this.options.parallelism !== 1) {
@@ -45,19 +60,10 @@ export abstract class BaseCrawler {
 
   private _browser: Browser|null = null;
 
-  async getBrowser (launchOptions: PuppeteerLaunchOptions = {}): Promise<Browser> {
+  async getBrowser (): Promise<Browser> {
     if (this._browser === null) {
-      // THÊM ARGS ĐỂ FIX LỖI SANDBOX
-      const options = {
-        ...launchOptions,
-        args: [
-          ...(launchOptions.args || []),
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage'
-        ]
-      };
-      const browser = await puppeteer.launch(options);
+      // Dùng launchOptionsWithSandbox đã có flags
+      const browser = await puppeteer.launch(this.launchOptionsWithSandbox);
 
       const pages = await browser.pages();
       await Promise.all(pages.map(page => page.close()));
@@ -74,7 +80,7 @@ export abstract class BaseCrawler {
   }
 
   async newPage (url: string|undefined): Promise<Page> {
-    const browser = await this.getBrowser(this.launchOptions);
+    const browser = await this.getBrowser();
     const page = await browser.newPage();
     if (url) {
       await page.goto(url);
