@@ -4,13 +4,13 @@ import { logger } from '../logger';
 import { wait } from '../util';
 
 export interface ICrawlerOptions {
-parallelism?: number
-cacheExpirySeconds?: number
+  parallelism?: number
+  cacheExpirySeconds?: number
 }
 
 interface ICrawlerFullOptions extends ICrawlerOptions {
-parallelism: number
-cacheExpirySeconds: number
+  parallelism: number
+  cacheExpirySeconds: number
 }
 
 export const DefaultCrawlerOptions: ICrawlerFullOptions = {
@@ -23,8 +23,8 @@ export abstract class BaseCrawler {
   protected options: ICrawlerFullOptions;
 
   constructor (
-  readonly launchOptions: PuppeteerLaunchOptions,
-  options: ICrawlerOptions = {}
+    readonly launchOptions: PuppeteerLaunchOptions,
+    options: ICrawlerOptions = {}
   ) {
     this.options = Object.assign({}, DefaultCrawlerOptions, options);
 
@@ -40,18 +40,24 @@ export abstract class BaseCrawler {
     if (launchOptions.devtools) {
       return false;
     }
-
     return launchOptions.headless !== false;
   }
-
-  // Puppeteer `Browser`
-  // One browser per crawler instance
 
   private _browser: Browser|null = null;
 
   async getBrowser (launchOptions: PuppeteerLaunchOptions = {}): Promise<Browser> {
     if (this._browser === null) {
-      const browser = await puppeteer.launch(launchOptions);
+      // THÊM ARGS ĐỂ FIX LỖI SANDBOX
+      const options = {
+        ...launchOptions,
+        args: [
+          ...(launchOptions.args || []),
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage'
+        ]
+      };
+      const browser = await puppeteer.launch(options);
 
       const pages = await browser.pages();
       await Promise.all(pages.map(page => page.close()));
@@ -67,11 +73,8 @@ export abstract class BaseCrawler {
     }
   }
 
-  // Puppeteer `Pages`
-
   async newPage (url: string|undefined): Promise<Page> {
     const browser = await this.getBrowser(this.launchOptions);
-
     const page = await browser.newPage();
     if (url) {
       await page.goto(url);
@@ -82,8 +85,6 @@ export abstract class BaseCrawler {
   async closePage (page: Page): Promise<void> {
     await page.close();
   }
-
-  // Puppeteer `ElementNodes`
 
   async wait (durationMs:number = 0): Promise<void> {
     return wait(durationMs);
